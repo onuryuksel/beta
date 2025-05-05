@@ -677,24 +677,48 @@ else:
                      else: st.warning("Please select exactly two snapshots from this group to compare.")
 
 # --- OPTIMIZATION: Helper function for displaying single site results ---
-def display_single_site_results(df, site_name, processing_flag, input_provided_flag, process_button_pressed):
-    """Displays the results (DataFrame, download) for a single site."""
-    st.subheader(f"{site_name} Results")
-    if df is not None and not df.empty and 'Brand' in df.columns and 'Count' in df.columns:
-        st.write(f"Brands Found: {len(df)}")
-        df['Count'] = pd.to_numeric(df['Count'], errors='coerce').fillna(0)
-        df_display = df.sort_values(by='Count', ascending=False).reset_index(drop=True); df_display.index += 1
-        st.dataframe(df_display[['Brand', 'Count']], height=400, use_container_width=True)
-        try:
-            csv_buffer = io.StringIO(); df_display[['Brand', 'Count']].to_csv(csv_buffer, index=False, encoding='utf-8'); csv_buffer.seek(0)
-            download_key = f"{site_name.lower().replace(' ','_')}_dl_disp"; download_filename = f"{site_name.lower().replace(' ','_')}_brands.csv"
-            st.download_button(f"Download {site_name} List (CSV)", csv_buffer.getvalue(), download_filename, 'text/csv', key=download_key)
-        except Exception as e: st.error(f"Could not generate download for {site_name}: {e}")
-    elif not processing_flag and input_provided_flag:
-         if process_button_pressed: st.warning(f"No data extracted from {site_name}.")
-         else: action = "Upload HTML File" if site_name == "Sephora" else "Enter URL"; st.info(f"{action} for {site_name} and click 'Process'.")
-    elif not input_provided_flag: action = "Upload HTML File" if site_name == "Sephora" else "Enter URL"; st.info(f"{action} for {site_name} if you wish to include it.")
-    elif processing_flag and (df is None or df.empty): st.warning(f"Data processed for {site_name}, but no valid brands were found matching the extraction rules.")
+def display_single_site_results(
+    df,
+    site_label: str,
+    processed_ok: bool,
+    input_provided: bool,
+    process_button: bool,
+):
+    """
+    Shows the single‑site result table with a bulletproof heading.
+    Automatically appends ' Results' only if the label doesn’t
+    already contain that word.
+    """
+    # ‑‑ Başlıkta çift “Results” engelleme
+    if site_label.lower().strip().endswith("results"):
+        final_label = site_label
+    else:
+        final_label = f"{site_label} Results"
+    st.subheader(final_label)
+
+    # --- eski gövde aynen ---
+    if not processed_ok:
+        if process_button and input_provided:
+            st.info("No data extracted or 0 brands found.")
+        else:
+            st.info("Awaiting input & processing.")
+        return
+
+    if df is None or df.empty:
+        st.info("No data to display.")
+        return
+
+    st.caption(f"Brands Found: {len(df)}")
+    st.dataframe(df.reset_index(drop=True))
+
+    csv_bytes = df.to_csv(index=False).encode("utf‑8")
+    safe_name = site_label.lower().replace(" ", "_")
+    st.download_button(
+        f"Download {site_label} (CSV)",
+        csv_bytes,
+        file_name=f"{safe_name}_brands.csv",
+        mime="text/csv",
+    )
 
 # --- Unified Display Function (Updated for Competitor) ---
 # ---------------------------------------------------------------------
