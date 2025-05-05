@@ -1560,15 +1560,15 @@ else:
         else: st.session_state.df_comparison_sorted = pd.DataFrame(); print("Comparison skipped.")
         st.rerun()
     df_ounass_live = st.session_state.get('df_ounass'); df_competitor_live = st.session_state.get('df_competitor'); df_comparison_sorted_live = st.session_state.get('df_comparison_sorted'); live_competitor_name = st.session_state.competitor_selection
-   display_all_results(
-    df_ounass_live,
-    df_competitor_live,
-    live_competitor_name,
-    df_comparison_sorted_live,
-    stats_title_prefix="Current Comparison",
-    title_left        = st.session_state.get("custom_left_title",  "Ounass Results"),
-    title_right       = st.session_state.get("custom_right_title"),     # None → default
-    comparison_heading= st.session_state.get("custom_comp_heading"),    # None → default
-)
+           display_all_results(
+            df_ounass_live,
+            df_competitor_live,
+            live_competitor_name,
+            df_comparison_sorted_live,
+            stats_title_prefix="Current Comparison",
+            title_left        = st.session_state.get("custom_left_title",  "Ounass Results"),
+            title_right       = st.session_state.get("custom_right_title"),     # None → default
+            comparison_heading= st.session_state.get("custom_comp_heading"),    # None → default
+        )
 
 # --- END OF UPDATED FILE ---
