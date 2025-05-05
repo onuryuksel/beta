@@ -1468,6 +1468,9 @@ else:
         
             st.session_state.processed_ounass_url        = url_a
             st.session_state.competitor_input_identifier = url_b
+            st.session_state.custom_left_title  = ctry_a          # ⬅︎  "UAE"
+            st.session_state.custom_right_title = ctry_b          # ⬅︎  "KSA"
+            st.session_state.custom_comp_heading = f"{ctry_a} vs {ctry_b} Brand Comparison"
         
             # 3) COUNTRY A tarafı
             with st.spinner(f"Processing Ounass {ctry_a} …"):
