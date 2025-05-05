@@ -668,174 +668,599 @@ def display_single_site_results(df, site_name, processing_flag, input_provided_f
     elif processing_flag and (df is None or df.empty): st.warning(f"Data processed for {site_name}, but no valid brands were found matching the extraction rules.")
 
 # --- Unified Display Function (Updated for Competitor) ---
-def display_all_results(df_ounass, df_competitor, competitor_name_arg, df_comparison_sorted, stats_title_prefix="Overall Statistics", is_saved_view=False, saved_meta=None):
+# ---------------------------------------------------------------------
+# Display the stats panel, single‑site tables and full comparison view
+# ---------------------------------------------------------------------
+def display_all_results(
+        df_ounass,
+        df_competitor,
+        competitor_name_arg,
+        df_comparison_sorted,
+        stats_title_prefix: str = "Overall Statistics",
+        is_saved_view: bool = False,
+        saved_meta: dict | None = None,
+        # ── NEW OPTIONAL HEADINGS ────────────────────────────
+        title_left: str = "Ounass Results",
+        title_right: str | None = None,
+        comparison_heading: str | None = None,
+):
+    """
+    Renders the complete results section.
+
+    *title_left*, *title_right*, *comparison_heading* are optional
+    overrides (used for the Ounass‑vs‑Ounass flow).  When they’re None,
+    legacy behaviour is preserved so Level Shoes / Sephora comparisons
+    look exactly as before.
+    """
+
+    # -------------------------------------------------------
+    # 0.  Prep / fall‑backs
+    # -------------------------------------------------------
     global process_button
-    stats_title = stats_title_prefix; detected_gender, detected_category = None, None
-    ounass_url_for_meta = ''; competitor_input_for_meta = ''; comp_name_for_meta = competitor_name_arg
+
     live_competitor_name = st.session_state.get(
-    'competitor_display_name',   # varsa bunu kullan
-    st.session_state.competitor_selection  # yoksa eski değeri
+        "competitor_display_name",
+        st.session_state.competitor_selection,
     )
+
+    comp_name_for_meta = competitor_name_arg  # we re‑use this a lot later
+
+    # Fallbacks for the new headings
+    if title_right is None:
+        title_right = f"{comp_name_for_meta} Results"
+
+    if comparison_heading is None:
+        comparison_heading = f"Ounass vs {comp_name_for_meta} Brand Comparison"
+
+    # -------------------------------------------------------
+    # 1.  Figure out dynamic “stats_title” & meta info block
+    # -------------------------------------------------------
+    detected_gender, detected_category = None, None
+    ounass_url_for_meta = ""
+    competitor_input_for_meta = ""
+
     if is_saved_view and saved_meta:
-        comp_name_for_meta = saved_meta.get('competitor_name', 'Unknown Competitor'); ounass_url_for_meta = saved_meta.get('ounass_url', ''); competitor_input_for_meta = saved_meta.get('competitor_input', 'N/A')
-        oun_g, oun_c = extract_info_from_url(ounass_url_for_meta); ls_g, ls_c = None, None
-        if comp_name_for_meta == "Level Shoes" and isinstance(competitor_input_for_meta, str) and competitor_input_for_meta.startswith('http'): ls_g, ls_c = extract_info_from_url(competitor_input_for_meta)
-        if oun_g or ls_g: detected_gender = oun_g or ls_g;
-        if oun_c or ls_c: detected_category = oun_c or ls_c
-        ts = saved_meta.get('timestamp', 'N/A'); display_ts_str="N/A"
+        # ---------------------------------------------------
+        # Viewing a saved comparison
+        # ---------------------------------------------------
+        comp_name_for_meta = saved_meta.get("competitor_name", "Unknown Competitor")
+        ounass_url_for_meta = saved_meta.get("ounass_url", "")
+        competitor_input_for_meta = saved_meta.get("competitor_input", "N/A")
+
+        # Attempt to extract gender / category info from URLs
+        oun_g, oun_c = extract_info_from_url(ounass_url_for_meta)
+        ls_g, ls_c = None, None
+        if comp_name_for_meta == "Level Shoes" and isinstance(
+            competitor_input_for_meta, str
+        ) and competitor_input_for_meta.startswith("http"):
+            ls_g, ls_c = extract_info_from_url(competitor_input_for_meta)
+
+        if oun_g or ls_g:
+            detected_gender = oun_g or ls_g
+        if oun_c or ls_c:
+            detected_category = oun_c or ls_c
+
+        # Saved‑time formatting
+        ts = saved_meta.get("timestamp", "N/A")
+        display_ts_str = "N/A"
         try:
-             if pytz:
-                  dt = ts; tz_name = 'Asia/Dubai'
-                  if isinstance(ts, str): dt = datetime.fromisoformat(ts.replace('Z', '+00:00'))
-                  if isinstance(dt, datetime):
-                       if dt.tzinfo is None: dt = pytz.utc.localize(dt)
-                       display_ts_str = dt.astimezone(pytz.timezone(tz_name)).strftime('%Y-%m-%d %H:%M:%S (%Z)')
-             else:
-                  if isinstance(ts, datetime): display_ts_str = ts.strftime('%Y-%m-%d %H:%M:%S')
-                  elif isinstance(ts, str): display_ts_str = ts[:19].replace('T',' ')
-        except Exception: pass
+            if pytz:
+                dt = ts
+                tz_name = "Asia/Dubai"
+                if isinstance(ts, str):
+                    dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+                if isinstance(dt, datetime):
+                    if dt.tzinfo is None:
+                        dt = pytz.utc.localize(dt)
+                    display_ts_str = dt.astimezone(
+                        pytz.timezone(tz_name)
+                    ).strftime("%Y-%m-%d %H:%M:%S (%Z)")
+            else:
+                if isinstance(ts, datetime):
+                    display_ts_str = ts.strftime("%Y-%m-%d %H:%M:%S")
+                elif isinstance(ts, str):
+                    display_ts_str = ts[:19].replace("T", " ")
+        except Exception:
+            pass
+
         st.subheader(f"Viewing Saved Comparison (Ounass vs {comp_name_for_meta})")
         st.caption(f"Saved: {display_ts_str} (ID: {saved_meta.get('id', 'N/A')})")
         st.caption(f"Ounass URL: `{ounass_url_for_meta}`")
         competitor_input_label = "URL" if comp_name_for_meta == "Level Shoes" else "File"
         st.caption(f"{comp_name_for_meta} {competitor_input_label}: `{competitor_input_for_meta}`")
+
     else:
-        comp_name_for_meta = competitor_name_arg; ounass_url_for_meta = st.session_state.get('processed_ounass_url') or st.session_state.get('ounass_url_input')
-        if comp_name_for_meta == "Level Shoes": competitor_input_for_meta = st.session_state.get('levelshoes_url_input', '')
-        else: competitor_input_for_meta = st.session_state.get('competitor_input_identifier', '')
-        if ounass_url_for_meta: g_live, c_live = extract_info_from_url(ounass_url_for_meta); detected_gender = g_live; detected_category = c_live
-        elif comp_name_for_meta == "Level Shoes" and competitor_input_for_meta: g_live, c_live = extract_info_from_url(competitor_input_for_meta); detected_gender = g_live; detected_category = c_live
-    if detected_gender and detected_category: stats_title = f"{stats_title_prefix}: Ounass vs {comp_name_for_meta} - {detected_gender} / {detected_category}"
-    elif detected_gender: stats_title = f"{stats_title_prefix}: Ounass vs {comp_name_for_meta} - {detected_gender}"
-    elif detected_category: stats_title = f"{stats_title_prefix}: Ounass vs {comp_name_for_meta} - {detected_category}"
-    else: stats_title = f"{stats_title_prefix}: Ounass vs {comp_name_for_meta}"
+        # ---------------------------------------------------
+        # Live (unsaved) comparison
+        # ---------------------------------------------------
+        comp_name_for_meta = competitor_name_arg
+        ounass_url_for_meta = st.session_state.get("processed_ounass_url") or st.session_state.get("ounass_url_input")
+
+        if comp_name_for_meta == "Level Shoes":
+            competitor_input_for_meta = st.session_state.get("levelshoes_url_input", "")
+        else:
+            competitor_input_for_meta = st.session_state.get("competitor_input_identifier", "")
+
+        if ounass_url_for_meta:
+            g_live, c_live = extract_info_from_url(ounass_url_for_meta)
+            detected_gender = g_live
+            detected_category = c_live
+        elif comp_name_for_meta == "Level Shoes" and competitor_input_for_meta:
+            g_live, c_live = extract_info_from_url(competitor_input_for_meta)
+            detected_gender = g_live
+            detected_category = c_live
+
+    # Build the dynamic stats_title
+    if detected_gender and detected_category:
+        stats_title = f"{stats_title_prefix}: Ounass vs {comp_name_for_meta} - {detected_gender} / {detected_category}"
+    elif detected_gender:
+        stats_title = f"{stats_title_prefix}: Ounass vs {comp_name_for_meta} - {detected_gender}"
+    elif detected_category:
+        stats_title = f"{stats_title_prefix}: Ounass vs {comp_name_for_meta} - {detected_category}"
+    else:
+        stats_title = f"{stats_title_prefix}: Ounass vs {comp_name_for_meta}"
+
+    # Save button for live comparisons
     if not is_saved_view and df_comparison_sorted is not None and not df_comparison_sorted.empty:
         stat_title_col, stat_save_col = st.columns([0.8, 0.2])
-        with stat_title_col: st.subheader(stats_title)
+        with stat_title_col:
+            st.subheader(stats_title)
         with stat_save_col:
-            st.write(""); can_save = bool(ounass_url_for_meta and competitor_input_for_meta); save_help = "Save current comparison results" if can_save else "Cannot save without valid inputs for both sites"
-            save_button_key = f"save_live_comp_confirm_{comp_name_for_meta.replace(' ','_')}"
-            if st.button("💾 Save", key=save_button_key, help=save_help, use_container_width=True, disabled=not can_save):
-                if save_comparison(ounass_url_for_meta, comp_name_for_meta, competitor_input_for_meta, df_comparison_sorted):
+            st.write("")
+            can_save = bool(ounass_url_for_meta and competitor_input_for_meta)
+            save_help = "Save current comparison results" if can_save else "Cannot save without valid inputs for both sites"
+            save_button_key = f"save_live_comp_confirm_{comp_name_for_meta.replace(' ', '_')}"
+            if st.button(
+                "💾 Save",
+                key=save_button_key,
+                help=save_help,
+                use_container_width=True,
+                disabled=not can_save,
+            ):
+                if save_comparison(
+                    ounass_url_for_meta,
+                    comp_name_for_meta,
+                    competitor_input_for_meta,
+                    df_comparison_sorted,
+                ):
                     st.success(f"Comparison saved! ({datetime.now().strftime('%Y-%m-%d %H:%M:%S')})")
-                    load_saved_comparisons_meta.clear(); st.session_state.confirm_delete_id = None; st.rerun()
-    else: st.subheader(stats_title)
-    df_o_safe = df_ounass if df_ounass is not None and not df_ounass.empty else pd.DataFrame(columns=['Brand', 'Count'])
-    df_c_safe = df_competitor if df_competitor is not None and not df_competitor.empty else pd.DataFrame(columns=['Brand', 'Count'])
-    df_comp_safe = df_comparison_sorted if df_comparison_sorted is not None and not df_comparison_sorted.empty else pd.DataFrame()
-    if 'Count' in df_o_safe.columns: df_o_safe['Count'] = pd.to_numeric(df_o_safe['Count'], errors='coerce').fillna(0)
-    if 'Count' in df_c_safe.columns: df_c_safe['Count'] = pd.to_numeric(df_c_safe['Count'], errors='coerce').fillna(0)
-    total_ounass_brands = len(df_o_safe['Brand'].unique()) if 'Brand' in df_o_safe.columns else 0; total_ounass_products = int(df_o_safe['Count'].sum()) if 'Count' in df_o_safe.columns else 0
-    total_competitor_brands = len(df_c_safe['Brand'].unique()) if 'Brand' in df_c_safe.columns else 0; total_competitor_products = int(df_c_safe['Count'].sum()) if 'Count' in df_c_safe.columns else 0
-    common_brands_count = 0; ounass_only_count = 0; competitor_only_count = 0; competitor_count_col_name = f"{comp_name_for_meta.replace(' ', '')}_Count"
-    if not df_comp_safe.empty and 'Ounass_Count' in df_comp_safe.columns and competitor_count_col_name in df_comp_safe.columns:
-        df_comp_safe['Ounass_Count'] = pd.to_numeric(df_comp_safe['Ounass_Count'], errors='coerce').fillna(0)
-        df_comp_safe[competitor_count_col_name] = pd.to_numeric(df_comp_safe[competitor_count_col_name], errors='coerce').fillna(0)
-        if total_ounass_products == 0: total_ounass_products = int(df_comp_safe['Ounass_Count'].sum())
-        if total_competitor_products == 0: total_competitor_products = int(df_comp_safe[competitor_count_col_name].sum())
-        if total_ounass_brands == 0: total_ounass_brands = len(df_comp_safe[df_comp_safe['Ounass_Count'] > 0])
-        if total_competitor_brands == 0: total_competitor_brands = len(df_comp_safe[df_comp_safe[competitor_count_col_name] > 0])
-        common_brands_count = len(df_comp_safe[(df_comp_safe['Ounass_Count'] > 0) & (df_comp_safe[competitor_count_col_name] > 0)])
-        ounass_only_count = len(df_comp_safe[(df_comp_safe['Ounass_Count'] > 0) & (df_comp_safe[competitor_count_col_name] == 0)])
-        competitor_only_count = len(df_comp_safe[(df_comp_safe['Ounass_Count'] == 0) & (df_comp_safe[competitor_count_col_name] > 0)])
+                    load_saved_comparisons_meta.clear()
+                    st.session_state.confirm_delete_id = None
+                    st.rerun()
+    else:
+        st.subheader(stats_title)
+
+    # -------------------------------------------------------
+    # 2.  Calculate core metrics
+    # -------------------------------------------------------
+    df_o_safe = (
+        df_ounass
+        if df_ounass is not None and not df_ounass.empty
+        else pd.DataFrame(columns=["Brand", "Count"])
+    )
+    df_c_safe = (
+        df_competitor
+        if df_competitor is not None and not df_competitor.empty
+        else pd.DataFrame(columns=["Brand", "Count"])
+    )
+    df_comp_safe = (
+        df_comparison_sorted
+        if df_comparison_sorted is not None and not df_comparison_sorted.empty
+        else pd.DataFrame()
+    )
+
+    # Make sure Count columns are numeric
+    if "Count" in df_o_safe.columns:
+        df_o_safe["Count"] = pd.to_numeric(df_o_safe["Count"], errors="coerce").fillna(0)
+    if "Count" in df_c_safe.columns:
+        df_c_safe["Count"] = pd.to_numeric(df_c_safe["Count"], errors="coerce").fillna(0)
+
+    total_ounass_brands = len(df_o_safe["Brand"].unique()) if "Brand" in df_o_safe.columns else 0
+    total_ounass_products = int(df_o_safe["Count"].sum()) if "Count" in df_o_safe.columns else 0
+    total_competitor_brands = len(df_c_safe["Brand"].unique()) if "Brand" in df_c_safe.columns else 0
+    total_competitor_products = int(df_c_safe["Count"].sum()) if "Count" in df_c_safe.columns else 0
+
+    # Calculate common / only counts if comparison DF present
+    common_brands_count = 0
+    ounass_only_count = 0
+    competitor_only_count = 0
+    competitor_count_col_name = f"{comp_name_for_meta.replace(' ', '')}_Count"
+
+    if not df_comp_safe.empty and "Ounass_Count" in df_comp_safe.columns and competitor_count_col_name in df_comp_safe.columns:
+        df_comp_safe["Ounass_Count"] = pd.to_numeric(df_comp_safe["Ounass_Count"], errors="coerce").fillna(0)
+        df_comp_safe[competitor_count_col_name] = pd.to_numeric(df_comp_safe[competitor_count_col_name], errors="coerce").fillna(0)
+
+        # Fallback totals if single‑site tables were empty
+        if total_ounass_products == 0:
+            total_ounass_products = int(df_comp_safe["Ounass_Count"].sum())
+        if total_competitor_products == 0:
+            total_competitor_products = int(df_comp_safe[competitor_count_col_name].sum())
+
+        if total_ounass_brands == 0:
+            total_ounass_brands = len(df_comp_safe[df_comp_safe["Ounass_Count"] > 0])
+        if total_competitor_brands == 0:
+            total_competitor_brands = len(df_comp_safe[df_comp_safe[competitor_count_col_name] > 0])
+
+        common_brands_count = len(
+            df_comp_safe[
+                (df_comp_safe["Ounass_Count"] > 0)
+                & (df_comp_safe[competitor_count_col_name] > 0)
+            ]
+        )
+        ounass_only_count = len(
+            df_comp_safe[
+                (df_comp_safe["Ounass_Count"] > 0)
+                & (df_comp_safe[competitor_count_col_name] == 0)
+            ]
+        )
+        competitor_only_count = len(
+            df_comp_safe[
+                (df_comp_safe["Ounass_Count"] == 0)
+                & (df_comp_safe[competitor_count_col_name] > 0)
+            ]
+        )
+
+    # -------------------------------------------------------
+    # 3.  Metrics summary panel
+    # -------------------------------------------------------
     stat_col1, stat_col2, stat_col3 = st.columns(3)
-    with stat_col1: st.metric("Ounass Brands", f"{total_ounass_brands:,}"); st.metric("Ounass Products", f"{total_ounass_products:,}")
-    with stat_col2: st.metric(f"{comp_name_for_meta} Brands", f"{total_competitor_brands:,}"); st.metric(f"{comp_name_for_meta} Products", f"{total_competitor_products:,}")
+    with stat_col1:
+        st.metric("Ounass Brands", f"{total_ounass_brands:,}")
+        st.metric("Ounass Products", f"{total_ounass_products:,}")
+    with stat_col2:
+        st.metric(f"{comp_name_for_meta} Brands", f"{total_competitor_brands:,}")
+        st.metric(f"{comp_name_for_meta} Products", f"{total_competitor_products:,}")
     with stat_col3:
-        if not df_comp_safe.empty and 'Ounass_Count' in df_comp_safe.columns and competitor_count_col_name in df_comp_safe.columns: st.metric("Common Brands", f"{common_brands_count:,}"); st.metric("Ounass Only", f"{ounass_only_count:,}"); st.metric(f"{comp_name_for_meta} Only", f"{competitor_only_count:,}")
-        else: st.metric("Common Brands", "N/A"); st.metric("Ounass Only", "N/A"); st.metric(f"{comp_name_for_meta} Only", "N/A")
-        ounass_input_exists = bool(st.session_state.get('ounass_url_input')); competitor_input_exists = bool(st.session_state.get('levelshoes_url_input') if comp_name_for_meta == "Level Shoes" else st.session_state.get('uploaded_sephora_html'))
-        if not is_saved_view and (ounass_input_exists or competitor_input_exists): st.caption("Comparison requires processed data from *both* sites.")
-    st.write(""); st.markdown("---")
+        if not df_comp_safe.empty and "Ounass_Count" in df_comp_safe.columns and competitor_count_col_name in df_comp_safe.columns:
+            st.metric("Common Brands", f"{common_brands_count:,}")
+            st.metric("Ounass Only", f"{ounass_only_count:,}")
+            st.metric(f"{comp_name_for_meta} Only", f"{competitor_only_count:,}")
+        else:
+            st.metric("Common Brands", "N/A")
+            st.metric("Ounass Only", "N/A")
+            st.metric(f"{comp_name_for_meta} Only", "N/A")
+
+        ounass_input_exists = bool(st.session_state.get("ounass_url_input"))
+        competitor_input_exists = bool(
+            st.session_state.get("levelshoes_url_input")
+            if comp_name_for_meta == "Level Shoes"
+            else st.session_state.get("uploaded_sephora_html")
+        )
+        if not is_saved_view and (ounass_input_exists or competitor_input_exists):
+            st.caption("Comparison requires processed data from *both* sites.")
+
+    st.write("")
+    st.markdown("---")
+
+    # -------------------------------------------------------
+    # 4.  Single‑site result tables (left / right)
+    # -------------------------------------------------------
     if not is_saved_view:
         col1, col2 = st.columns(2)
-        with col1: display_single_site_results(st.session_state.get('df_ounass'), "Ounass", st.session_state.get('df_ounass_processed', False), bool(st.session_state.get('ounass_url_input')), process_button)
-        with col2: competitor_input_provided = bool(st.session_state.get('levelshoes_url_input') if comp_name_for_meta=="Level Shoes" else st.session_state.get('uploaded_sephora_html')); display_single_site_results(st.session_state.get('df_competitor'), comp_name_for_meta, st.session_state.get('df_competitor_processed', False), competitor_input_provided, process_button)
+
+        # Left side – Ounass (or country‑specific heading)
+        with col1:
+            display_single_site_results(
+                st.session_state.get("df_ounass"),
+                title_left,  # <-- dynamic heading
+                st.session_state.get("df_ounass_processed", False),
+                bool(st.session_state.get("ounass_url_input")),
+                process_button,
+            )
+
+        # Right side – competitor (or second country)
+        with col2:
+            competitor_input_provided = bool(
+                st.session_state.get("levelshoes_url_input")
+                if comp_name_for_meta == "Level Shoes"
+                else st.session_state.get("uploaded_sephora_html")
+            )
+            display_single_site_results(
+                st.session_state.get("df_competitor"),
+                title_right,  # <-- dynamic heading
+                st.session_state.get("df_competitor_processed", False),
+                competitor_input_provided,
+                process_button,
+            )
+
+    # -------------------------------------------------------
+    # 5.  Full comparison table + charts
+    # -------------------------------------------------------
     if not df_comp_safe.empty:
-        if not is_saved_view: st.markdown("---")
-        st.subheader(f"Ounass vs {comp_name_for_meta} Brand Comparison"); df_display_comp = df_comp_safe.copy(); df_display_comp.index += 1
-        display_cols = ['Display_Brand', 'Ounass_Count', competitor_count_col_name, 'Difference']; missing_cols = [col for col in display_cols if col not in df_display_comp.columns]
-        if missing_cols: st.warning(f"Comp table missing: {', '.join(missing_cols)}"); st.dataframe(df_display_comp, height=500, use_container_width=True)
-        else: display_rename = {competitor_count_col_name: f"{comp_name_for_meta} Count"}; st.dataframe(df_display_comp[display_cols].rename(columns=display_rename), height=500, use_container_width=True)
-        st.markdown("---"); st.subheader("Visual Comparison"); viz_col1, viz_col2 = st.columns(2)
+        if not is_saved_view:
+            st.markdown("---")
+
+        st.subheader(comparison_heading)  # <-- dynamic combined heading
+
+        # -- Dataframe viewer --
+        df_display_comp = df_comp_safe.copy()
+        df_display_comp.index += 1
+
+        display_cols = ["Display_Brand", "Ounass_Count", competitor_count_col_name, "Difference"]
+        missing_cols = [c for c in display_cols if c not in df_display_comp.columns]
+
+        if missing_cols:
+            st.warning(f"Comp table missing: {', '.join(missing_cols)}")
+            st.dataframe(df_display_comp, height=500, use_container_width=True)
+        else:
+            display_rename = {competitor_count_col_name: f"{comp_name_for_meta} Count"}
+            st.dataframe(
+                df_display_comp[display_cols].rename(columns=display_rename),
+                height=500,
+                use_container_width=True,
+            )
+
+        # -- Charts ---------------------------------------------------
+        st.markdown("---")
+        st.subheader("Visual Comparison")
+        viz_col1, viz_col2 = st.columns(2)
+
+        # Pie chart: overlap
         with viz_col1:
-            st.write("**Brand Overlap**"); pie_data = pd.DataFrame({'Category': ['Common Brands', 'Ounass Only', f'{comp_name_for_meta} Only'],'Count': [common_brands_count, ounass_only_count, competitor_only_count]}); pie_data = pie_data[pie_data['Count'] > 0]
+            st.write("**Brand Overlap**")
+            pie_data = pd.DataFrame(
+                {
+                    "Category": ["Common Brands", "Ounass Only", f"{comp_name_for_meta} Only"],
+                    "Count": [common_brands_count, ounass_only_count, competitor_only_count],
+                }
+            )
+            pie_data = pie_data[pie_data["Count"] > 0]
             if not pie_data.empty:
-                try: fig_pie = px.pie(pie_data, names='Category', values='Count', title="Brand Presence Distribution", color_discrete_sequence=px.colors.qualitative.Pastel); fig_pie.update_traces(textposition='inside', textinfo='percent+label+value'); st.plotly_chart(fig_pie, use_container_width=True)
-                except Exception as e: st.error(f"Error creating overlap chart: {e}")
-            else: st.info("No data available for overlap chart.")
+                try:
+                    fig_pie = px.pie(
+                        pie_data,
+                        names="Category",
+                        values="Count",
+                        title="Brand Presence Distribution",
+                        color_discrete_sequence=px.colors.qualitative.Pastel,
+                    )
+                    fig_pie.update_traces(textposition="inside", textinfo="percent+label+value")
+                    st.plotly_chart(fig_pie, use_container_width=True)
+                except Exception as e:
+                    st.error(f"Error creating overlap chart: {e}")
+            else:
+                st.info("No data available for overlap chart.")
+
+        # Bar chart: largest differences
         with viz_col2:
             st.write(f"**Top 10 Largest Differences (Ounass - {comp_name_for_meta})**")
-            if 'Difference' in df_comp_safe.columns and 'Display_Brand' in df_comp_safe.columns:
-                df_comp_safe['Difference'] = pd.to_numeric(df_comp_safe['Difference'], errors='coerce'); df_diff_valid = df_comp_safe.dropna(subset=['Difference'])
-                top_pos = df_diff_valid[df_diff_valid['Difference'] > 0].nlargest(5, 'Difference'); top_neg = df_diff_valid[df_diff_valid['Difference'] < 0].nsmallest(5, 'Difference'); top_diff = pd.concat([top_pos, top_neg]).sort_values('Difference', ascending=False)
+            if "Difference" in df_comp_safe.columns and "Display_Brand" in df_comp_safe.columns:
+                df_comp_safe["Difference"] = pd.to_numeric(df_comp_safe["Difference"], errors="coerce")
+                df_diff_valid = df_comp_safe.dropna(subset=["Difference"])
+                top_pos = df_diff_valid[df_diff_valid["Difference"] > 0].nlargest(5, "Difference")
+                top_neg = df_diff_valid[df_diff_valid["Difference"] < 0].nsmallest(5, "Difference")
+                top_diff = pd.concat([top_pos, top_neg]).sort_values("Difference", ascending=False)
+
                 if not top_diff.empty:
-                    try: fig_diff = px.bar(top_diff, x='Display_Brand', y='Difference', title=f"Largest Product Count Differences", labels={'Display_Brand': 'Brand', 'Difference': f'Difference (Ounass - {comp_name_for_meta})'}, color='Difference', color_continuous_scale=px.colors.diverging.RdBu); fig_diff.update_layout(xaxis_title=None); st.plotly_chart(fig_diff, use_container_width=True)
-                    except Exception as e: st.error(f"Error creating difference chart: {e}")
-                else: st.info("No significant differences found for the chart.")
-            else: st.info("Difference data unavailable for the chart.")
-        st.markdown("---"); st.subheader("Top 15 Brands Comparison (Total Products Combined)")
-        required_top_cols = ['Display_Brand', 'Ounass_Count', competitor_count_col_name]
+                    try:
+                        fig_diff = px.bar(
+                            top_diff,
+                            x="Display_Brand",
+                            y="Difference",
+                            title="Largest Product Count Differences",
+                            labels={
+                                "Display_Brand": "Brand",
+                                "Difference": f"Difference (Ounass - {comp_name_for_meta})",
+                            },
+                            color="Difference",
+                            color_continuous_scale=px.colors.diverging.RdBu,
+                        )
+                        fig_diff.update_layout(xaxis_title=None)
+                        st.plotly_chart(fig_diff, use_container_width=True)
+                    except Exception as e:
+                        st.error(f"Error creating difference chart: {e}")
+                else:
+                    st.info("No significant differences found for the chart.")
+            else:
+                st.info("Difference data unavailable for the chart.")
+
+        # -- Top brands chart ----------------------------------------
+        st.markdown("---")
+        st.subheader("Top 15 Brands Comparison (Total Products Combined)")
+
+        required_top_cols = ["Display_Brand", "Ounass_Count", competitor_count_col_name]
+        top_n = 15
+
         if not df_comp_safe.empty and all(c in df_comp_safe.columns for c in required_top_cols):
-            df_comp_copy = df_comp_safe.copy(); df_comp_copy['Ounass_Count'] = pd.to_numeric(df_comp_copy['Ounass_Count'], errors='coerce').fillna(0); df_comp_copy[competitor_count_col_name] = pd.to_numeric(df_comp_copy[competitor_count_col_name], errors='coerce').fillna(0)
-            df_comp_copy['Total_Count'] = df_comp_copy['Ounass_Count'] + df_comp_copy[competitor_count_col_name]; top_n = 15; top_brands = df_comp_copy.nlargest(top_n, 'Total_Count')
+            df_comp_copy = df_comp_safe.copy()
+            df_comp_copy["Ounass_Count"] = pd.to_numeric(df_comp_copy["Ounass_Count"], errors="coerce").fillna(0)
+            df_comp_copy[competitor_count_col_name] = pd.to_numeric(
+                df_comp_copy[competitor_count_col_name], errors="coerce"
+            ).fillna(0)
+            df_comp_copy["Total_Count"] = df_comp_copy["Ounass_Count"] + df_comp_copy[competitor_count_col_name]
+            top_brands = df_comp_copy.nlargest(top_n, "Total_Count")
+
             if not top_brands.empty:
                 try:
-                    melted = top_brands.melt(id_vars='Display_Brand', value_vars=['Ounass_Count', competitor_count_col_name], var_name='Website', value_name='Product Count'); melted['Website'] = melted['Website'].replace({'Ounass_Count': 'Ounass', competitor_count_col_name: comp_name_for_meta})
-                    fig_top = px.bar(melted, x='Display_Brand', y='Product Count', color='Website', barmode='group', title=f"Top {top_n} Brands by Total Products (Combined)", labels={'Display_Brand': 'Brand'}, category_orders={"Display_Brand": top_brands['Display_Brand'].tolist()}); fig_top.update_layout(xaxis_title=None); st.plotly_chart(fig_top, use_container_width=True)
-                except Exception as e: st.error(f"Error creating Top {top_n} Brands chart: {e}")
-            else: st.info(f"Not enough data to display the Top {top_n} Brands chart.")
-        else: st.info(f"Comparison data is unavailable for the Top {top_n} Brands chart.")
-        st.markdown("---"); col_comp1, col_comp2 = st.columns(2); req_cols_exist = all(c in df_comp_safe.columns for c in ['Display_Brand', 'Ounass_Count', competitor_count_col_name, 'Difference'])
+                    melted = top_brands.melt(
+                        id_vars="Display_Brand",
+                        value_vars=["Ounass_Count", competitor_count_col_name],
+                        var_name="Website",
+                        value_name="Product Count",
+                    )
+                    melted["Website"] = melted["Website"].replace(
+                        {"Ounass_Count": "Ounass", competitor_count_col_name: comp_name_for_meta}
+                    )
+                    fig_top = px.bar(
+                        melted,
+                        x="Display_Brand",
+                        y="Product Count",
+                        color="Website",
+                        barmode="group",
+                        title=f"Top {top_n} Brands by Total Products (Combined)",
+                        labels={"Display_Brand": "Brand"},
+                        category_orders={"Display_Brand": top_brands["Display_Brand"].tolist()},
+                    )
+                    fig_top.update_layout(xaxis_title=None)
+                    st.plotly_chart(fig_top, use_container_width=True)
+                except Exception as e:
+                    st.error(f"Error creating Top {top_n} Brands chart: {e}")
+            else:
+                st.info(f"Not enough data to display the Top {top_n} Brands chart.")
+        else:
+            st.info(f"Comparison data is unavailable for the Top {top_n} Brands chart.")
+
+        # -- Only / common brand tables ------------------------------
+        st.markdown("---")
+        col_comp1, col_comp2 = st.columns(2)
+        req_cols_exist = all(
+            c in df_comp_safe.columns
+            for c in ["Display_Brand", "Ounass_Count", competitor_count_col_name, "Difference"]
+        )
+
         with col_comp1:
-            st.subheader("Brands in Ounass Only");
+            st.subheader("Brands in Ounass Only")
             if req_cols_exist:
-                df_comp_safe['Ounass_Count'] = pd.to_numeric(df_comp_safe['Ounass_Count'], errors='coerce').fillna(0); df_comp_safe[competitor_count_col_name] = pd.to_numeric(df_comp_safe[competitor_count_col_name], errors='coerce').fillna(0)
-                df_f = df_comp_safe[(df_comp_safe[competitor_count_col_name] == 0) & (df_comp_safe['Ounass_Count'] > 0)]
-                if not df_f.empty: df_d = df_f[['Display_Brand', 'Ounass_Count']].sort_values('Ounass_Count', ascending=False).reset_index(drop=True); df_d.index += 1; st.dataframe(df_d, height=400, use_container_width=True)
-                else: st.info("No unique Ounass brands found.")
-            else: st.info("Required data unavailable.")
+                df_comp_safe["Ounass_Count"] = pd.to_numeric(df_comp_safe["Ounass_Count"], errors="coerce").fillna(0)
+                df_comp_safe[competitor_count_col_name] = pd.to_numeric(
+                    df_comp_safe[competitor_count_col_name], errors="coerce"
+                ).fillna(0)
+                df_f = df_comp_safe[
+                    (df_comp_safe[competitor_count_col_name] == 0) & (df_comp_safe["Ounass_Count"] > 0)
+                ]
+                if not df_f.empty:
+                    df_d = (
+                        df_f[["Display_Brand", "Ounass_Count"]]
+                        .sort_values("Ounass_Count", ascending=False)
+                        .reset_index(drop=True)
+                    )
+                    df_d.index += 1
+                    st.dataframe(df_d, height=400, use_container_width=True)
+                else:
+                    st.info("No unique Ounass brands found.")
+            else:
+                st.info("Required data unavailable.")
+
         with col_comp2:
-            st.subheader(f"Brands in {comp_name_for_meta} Only");
+            st.subheader(f"Brands in {comp_name_for_meta} Only")
             if req_cols_exist:
-                df_comp_safe['Ounass_Count'] = pd.to_numeric(df_comp_safe['Ounass_Count'], errors='coerce').fillna(0); df_comp_safe[competitor_count_col_name] = pd.to_numeric(df_comp_safe[competitor_count_col_name], errors='coerce').fillna(0)
-                df_f = df_comp_safe[(df_comp_safe['Ounass_Count'] == 0) & (df_comp_safe[competitor_count_col_name] > 0)]
-                if not df_f.empty: df_d = df_f[['Display_Brand', competitor_count_col_name]].sort_values(competitor_count_col_name, ascending=False).reset_index(drop=True); df_d.index += 1; st.dataframe(df_d.rename(columns={competitor_count_col_name: f"{comp_name_for_meta} Count"}), height=400, use_container_width=True)
-                else: st.info(f"No unique {comp_name_for_meta} brands found.")
-            else: st.info(f"Required data unavailable.")
-        st.markdown("---"); col_comp3, col_comp4 = st.columns(2)
+                df_comp_safe["Ounass_Count"] = pd.to_numeric(df_comp_safe["Ounass_Count"], errors="coerce").fillna(0)
+                df_comp_safe[competitor_count_col_name] = pd.to_numeric(
+                    df_comp_safe[competitor_count_col_name], errors="coerce"
+                ).fillna(0)
+                df_f = df_comp_safe[
+                    (df_comp_safe["Ounass_Count"] == 0) & (df_comp_safe[competitor_count_col_name] > 0)
+                ]
+                if not df_f.empty:
+                    df_d = (
+                        df_f[["Display_Brand", competitor_count_col_name]]
+                        .sort_values(competitor_count_col_name, ascending=False)
+                        .reset_index(drop=True)
+                    )
+                    df_d.index += 1
+                    st.dataframe(
+                        df_d.rename(columns={competitor_count_col_name: f"{comp_name_for_meta} Count"}),
+                        height=400,
+                        use_container_width=True,
+                    )
+                else:
+                    st.info(f"No unique {comp_name_for_meta} brands found.")
+            else:
+                st.info("Required data unavailable.")
+
+        # -- Common brand tables (directional) -----------------------
+        st.markdown("---")
+        col_comp3, col_comp4 = st.columns(2)
+
         with col_comp3:
-            st.subheader(f"Common Brands: Ounass > {comp_name_for_meta}");
+            st.subheader(f"Common Brands: Ounass > {comp_name_for_meta}")
             if req_cols_exist:
-                df_comp_safe['Ounass_Count'] = pd.to_numeric(df_comp_safe['Ounass_Count'], errors='coerce').fillna(0); df_comp_safe[competitor_count_col_name] = pd.to_numeric(df_comp_safe[competitor_count_col_name], errors='coerce').fillna(0); df_comp_safe['Difference'] = pd.to_numeric(df_comp_safe['Difference'], errors='coerce')
-                df_f = df_comp_safe[(df_comp_safe['Ounass_Count'] > 0) & (df_comp_safe[competitor_count_col_name] > 0) & (df_comp_safe['Difference'] > 0)].sort_values('Difference', ascending=False)
-                if not df_f.empty: df_d = df_f[['Display_Brand', 'Ounass_Count', competitor_count_col_name, 'Difference']].reset_index(drop=True); df_d.index += 1; st.dataframe(df_d.rename(columns={competitor_count_col_name: f"{comp_name_for_meta} Count"}), height=400, use_container_width=True)
-                else: st.info(f"No common brands found where Ounass > {comp_name_for_meta}.")
-            else: st.info(f"Required data unavailable.")
+                df_comp_safe["Ounass_Count"] = pd.to_numeric(df_comp_safe["Ounass_Count"], errors="coerce").fillna(0)
+                df_comp_safe[competitor_count_col_name] = pd.to_numeric(
+                    df_comp_safe[competitor_count_col_name], errors="coerce"
+                ).fillna(0)
+                df_comp_safe["Difference"] = pd.to_numeric(df_comp_safe["Difference"], errors="coerce")
+                df_f = df_comp_safe[
+                    (df_comp_safe["Ounass_Count"] > 0)
+                    & (df_comp_safe[competitor_count_col_name] > 0)
+                    & (df_comp_safe["Difference"] > 0)
+                ].sort_values("Difference", ascending=False)
+                if not df_f.empty:
+                    df_d = df_f[
+                        ["Display_Brand", "Ounass_Count", competitor_count_col_name, "Difference"]
+                    ].reset_index(drop=True)
+                    df_d.index += 1
+                    st.dataframe(
+                        df_d.rename(columns={competitor_count_col_name: f"{comp_name_for_meta} Count"}),
+                        height=400,
+                        use_container_width=True,
+                    )
+                else:
+                    st.info(f"No common brands found where Ounass > {comp_name_for_meta}.")
+            else:
+                st.info("Required data unavailable.")
+
         with col_comp4:
-            st.subheader(f"Common Brands: {comp_name_for_meta} > Ounass");
+            st.subheader(f"Common Brands: {comp_name_for_meta} > Ounass")
             if req_cols_exist:
-                df_comp_safe['Ounass_Count'] = pd.to_numeric(df_comp_safe['Ounass_Count'], errors='coerce').fillna(0); df_comp_safe[competitor_count_col_name] = pd.to_numeric(df_comp_safe[competitor_count_col_name], errors='coerce').fillna(0); df_comp_safe['Difference'] = pd.to_numeric(df_comp_safe['Difference'], errors='coerce')
-                df_f = df_comp_safe[(df_comp_safe['Ounass_Count'] > 0) & (df_comp_safe[competitor_count_col_name] > 0) & (df_comp_safe['Difference'] < 0)].sort_values('Difference', ascending=True)
-                if not df_f.empty: df_d = df_f[['Display_Brand', 'Ounass_Count', competitor_count_col_name, 'Difference']].reset_index(drop=True); df_d.index += 1; st.dataframe(df_d.rename(columns={competitor_count_col_name: f"{comp_name_for_meta} Count"}), height=400, use_container_width=True)
-                else: st.info(f"No common brands found where {comp_name_for_meta} > Ounass.")
-            else: st.info(f"Required data unavailable.")
-        st.markdown("---"); dl_cols = ['Display_Brand', 'Ounass_Count', competitor_count_col_name, 'Difference']
+                df_comp_safe["Ounass_Count"] = pd.to_numeric(df_comp_safe["Ounass_Count"], errors="coerce").fillna(0)
+                df_comp_safe[competitor_count_col_name] = pd.to_numeric(
+                    df_comp_safe[competitor_count_col_name], errors="coerce"
+                ).fillna(0)
+                df_comp_safe["Difference"] = pd.to_numeric(df_comp_safe["Difference"], errors="coerce")
+                df_f = df_comp_safe[
+                    (df_comp_safe["Ounass_Count"] > 0)
+                    & (df_comp_safe[competitor_count_col_name] > 0)
+                    & (df_comp_safe["Difference"] < 0)
+                ].sort_values("Difference", ascending=True)
+                if not df_f.empty:
+                    df_d = df_f[
+                        ["Display_Brand", "Ounass_Count", competitor_count_col_name, "Difference"]
+                    ].reset_index(drop=True)
+                    df_d.index += 1
+                    st.dataframe(
+                        df_d.rename(columns={competitor_count_col_name: f"{comp_name_for_meta} Count"}),
+                        height=400,
+                        use_container_width=True,
+                    )
+                else:
+                    st.info(f"No common brands found where {comp_name_for_meta} > Ounass.")
+            else:
+                st.info("Required data unavailable.")
+
+        # -----------------------------------------------------------
+        # 6.  CSV download for comparison
+        # -----------------------------------------------------------
+        st.markdown("---")
+        dl_cols = ["Display_Brand", "Ounass_Count", competitor_count_col_name, "Difference"]
         if req_cols_exist:
             try:
-                csv_buffer_comparison = io.StringIO(); df_download = df_comp_safe[dl_cols].rename(columns={competitor_count_col_name: f"{comp_name_for_meta}_Count"})
-                df_download.to_csv(csv_buffer_comparison, index=False, encoding='utf-8'); csv_buffer_comparison.seek(0); download_label = f"Download {'Saved' if is_saved_view else 'Current'} Comparison (CSV)"
-                view_id_part = saved_meta['id'] if is_saved_view and saved_meta else 'live'; download_key = f"comp_dl_button_{'saved' if is_saved_view else 'live'}_{view_id_part}"
-                filename_desc = f"Ounass_vs_{comp_name_for_meta.replace(' ','_')}";
-                if detected_gender: filename_desc += f"_{detected_gender}"
-                if detected_category: filename_desc += f"_{detected_category.replace(' > ','-').replace(' ','_')}"
-                filename_desc = filename_desc.lower().replace('/','_'); download_filename = f"brand_comparison_{filename_desc}_{view_id_part}.csv".replace('?_?', 'unknown')
-                st.download_button(download_label, csv_buffer_comparison.getvalue(), download_filename, 'text/csv', key=download_key)
-            except Exception as e: st.error(f"Could not generate comparison download: {e}")
-        else: st.warning("Could not generate comparison download: required columns missing.")
-    elif process_button and not is_saved_view: st.markdown("---"); st.warning(f"Comparison (Ounass vs {comp_name_for_meta}) could not be generated. Check individual site results.")
+                csv_buffer_comparison = io.StringIO()
+                df_download = df_comp_safe[dl_cols].rename(
+                    columns={competitor_count_col_name: f"{comp_name_for_meta}_Count"}
+                )
+                df_download.to_csv(csv_buffer_comparison, index=False, encoding="utf-8")
+                csv_buffer_comparison.seek(0)
 
+                download_label = f"Download {'Saved' if is_saved_view else 'Current'} Comparison (CSV)"
+                view_id_part = saved_meta["id"] if is_saved_view and saved_meta else "live"
+                download_key = f"comp_dl_button_{'saved' if is_saved_view else 'live'}_{view_id_part}"
 
+                filename_desc = f"Ounass_vs_{comp_name_for_meta.replace(' ', '_')}"
+                if detected_gender:
+                    filename_desc += f"_{detected_gender}"
+                if detected_category:
+                    filename_desc += f"_{detected_category.replace(' > ', '-').replace(' ', '_')}"
+                filename_desc = filename_desc.lower().replace("/", "_")
+                download_filename = (
+                    f"brand_comparison_{filename_desc}_{view_id_part}.csv".replace("?_?", "unknown")
+                )
+
+                st.download_button(
+                    download_label,
+                    csv_buffer_comparison.getvalue(),
+                    download_filename,
+                    "text/csv",
+                    key=download_key,
+                )
+            except Exception as e:
+                st.error(f"Could not generate comparison download: {e}")
+        else:
+            st.warning("Could not generate comparison download: required columns missing.")
+
+    elif process_button and not is_saved_view:
+        st.markdown("---")
+        st.warning(f"Comparison (Ounass vs {comp_name_for_meta}) could not be generated. Check individual site results.")
 # --- Time Comparison Display Function (Updated for Competitor) ---
 def display_time_comparison_results(df_time_comp, meta1, meta2):
     st.markdown("---"); st.subheader("Snapshot Comparison Over Time")
