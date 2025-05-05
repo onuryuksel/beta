@@ -30,6 +30,16 @@ except ImportError:
 
 # --- END NEW IMPORTS ---
 
+# --- Country map for the new “Ounass vs Ounass” mode ---
+OUNASS_DOMAINS = {
+    "UAE":      "https://www.ounass.ae",
+    "KSA":      "https://en-saudi.ounass.com",
+    "Kuwait":   "https://kuwait.ounass.com",
+    "Oman":     "https://oman.ounass.com",
+    "Bahrain":  "https://bahrain.ounass.com",
+    "Qatar":    "https://www.ounass.qa",
+}
+
 # --- App Configuration ---
 APP_VERSION = "3.1.0" # Updated version: Improved cleaning/matching
 st.set_page_config(layout="wide", page_title="Ounass vs Competitor PLP Comparison")
@@ -70,7 +80,7 @@ if 'show_saved_comparisons' not in st.session_state: st.session_state.show_saved
 if 'competitor_input_identifier' not in st.session_state: st.session_state.competitor_input_identifier = '' # Stores URL or filename
 
 # --- Competitor Selection ---
-competitor_options = ["Level Shoes", "Sephora"]
+competitor_options = ["Ounass vs Ounass", "Level Shoes", "Sephora"]
 st.session_state.competitor_selection = st.radio(
     "Select Competitor to Compare Against Ounass:",
     options=competitor_options,
@@ -105,6 +115,20 @@ if not viewing_saved_id_check and st.session_state.get('df_time_comparison', pd.
                 placeholder="https://www.levelshoes.com/..."
             )
             st.session_state.uploaded_sephora_html = None # Clear file if switching back
+        elif competitor_name == "Ounass vs Ounass":
+            # country selectors live in the right‑hand column
+            st.session_state.country_a = st.selectbox(
+                "Country A (Base)",
+                list(OUNASS_DOMAINS.keys()),
+                key="country_a_selector",
+                index=0,
+            )
+            st.session_state.country_b = st.selectbox(
+                "Country B (Compare)",
+                list(OUNASS_DOMAINS.keys()),
+                key="country_b_selector",
+                index=1,
+            )    
         elif competitor_name == "Sephora":
             uploaded_file = st.file_uploader(
                 "Upload Sephora HTML File",
