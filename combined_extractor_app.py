@@ -1573,6 +1573,5 @@ else:
             title_right       = st.session_state.get("custom_right_title"),
             comparison_heading= st.session_state.get("custom_comp_heading"),
         )
-        st.rerun()
-
+       
 # --- END OF UPDATED FILE ---
