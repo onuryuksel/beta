@@ -80,7 +80,7 @@ if 'show_saved_comparisons' not in st.session_state: st.session_state.show_saved
 if 'competitor_input_identifier' not in st.session_state: st.session_state.competitor_input_identifier = '' # Stores URL or filename
 
 # --- Competitor Selection ---
-competitor_options = ["Ounass vs Ounass", "Level Shoes", "Sephora"]
+competitor_options = ["Level Shoes", "Sephora","Ounass vs Ounass"]
 st.session_state.competitor_selection = st.radio(
     "Select Competitor to Compare Against Ounass:",
     options=competitor_options,
@@ -128,7 +128,9 @@ if not viewing_saved_id_check and st.session_state.get('df_time_comparison', pd.
                 list(OUNASS_DOMAINS.keys()),
                 key="country_b_selector",
                 index=1,
-            )    
+            )
+            st.session_state.uploaded_sephora_html = None   # housekeeping
+            st.session_state.levelshoes_url_input = ""       # housekeeping
         elif competitor_name == "Sephora":
             uploaded_file = st.file_uploader(
                 "Upload Sephora HTML File",
