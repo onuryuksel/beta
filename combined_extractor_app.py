@@ -986,6 +986,8 @@ else:
                 path_and_query = parsed.path + ("?" + parsed.query if parsed.query else "")
                 url_a = OUNASS_DOMAINS[ctry_a].rstrip("/") + path_and_query
                 url_b = OUNASS_DOMAINS[ctry_b].rstrip("/") + path_and_query
+                url_a = ensure_ounass_full_list_parameter(url_a)
+                url_b = ensure_ounass_full_list_parameter(url_b)
 
                 st.session_state.processed_ounass_url = url_a
                 st.session_state.competitor_input_identifier = url_b
