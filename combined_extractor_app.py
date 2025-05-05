@@ -1558,7 +1558,6 @@ else:
                     st.session_state.df_comparison_sorted = df_comp.sort_values(by=['Total_Count', 'Ounass_Count', 'Display_Brand'], ascending=[False, False, True]).reset_index(drop=True)[final_cols_ordered + ['Total_Count']]
                 except Exception as merge_e: st.error(f"Error during comparison merge: {merge_e}"); st.session_state.df_comparison_sorted = pd.DataFrame()
         else: st.session_state.df_comparison_sorted = pd.DataFrame(); print("Comparison skipped.")
-        st.rerun()
         df_ounass_live = st.session_state.get('df_ounass'); df_competitor_live = st.session_state.get('df_competitor'); df_comparison_sorted_live = st.session_state.get('df_comparison_sorted'); live_competitor_name = st.session_state.competitor_selection
         df_ounass_live            = st.session_state.get("df_ounass")
         df_competitor_live        = st.session_state.get("df_competitor")
@@ -1574,5 +1573,6 @@ else:
             title_right       = st.session_state.get("custom_right_title"),
             comparison_heading= st.session_state.get("custom_comp_heading"),
         )
+        st.rerun()
 
 # --- END OF UPDATED FILE ---
