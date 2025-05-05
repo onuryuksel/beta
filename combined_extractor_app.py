@@ -971,6 +971,44 @@ else:
                             else: print("Warning: Level Shoes DF invalid.")
                         except Exception as e: st.error(f"Error creating Level Shoes DF: {e}")
             else: st.warning("Level Shoes URL is required.")
+
+        elif competitor_name_live == "Ounass vs Ounass":
+            # Validate selections
+            ctry_a = st.session_state.get("country_a")
+            ctry_b = st.session_state.get("country_b")
+            if ctry_a == ctry_b:
+                st.warning("Please pick two different countries to compare.")
+            elif not st.session_state.ounass_url_input:
+                st.warning("An Ounass PLP URL is required.")
+            else:
+                # Build the two country‑specific URLs
+                parsed = urlparse(st.session_state.ounass_url_input)
+                path_and_query = parsed.path + ("?" + parsed.query if parsed.query else "")
+                url_a = OUNASS_DOMAINS[ctry_a].rstrip("/") + path_and_query
+                url_b = OUNASS_DOMAINS[ctry_b].rstrip("/") + path_and_query
+
+                st.session_state.processed_ounass_url = url_a
+                st.session_state.competitor_input_identifier = url_b
+
+                with st.spinner(f"Processing Ounass {ctry_a} …"):
+                    html_a = fetch_html_content(url_a)
+                    if html_a:
+                        st.session_state.ounass_data = ounass_extractor.get_processed_ounass_data(html_a)
+                        df_a = pd.DataFrame(st.session_state.ounass_data)
+                        st.session_state.df_ounass = df_a
+                        st.session_state.df_ounass_processed = True
+                        ounass_processed_ok = True
+
+                with st.spinner(f"Processing Ounass {ctry_b} …"):
+                    html_b = fetch_html_content(url_b)
+                    if html_b:
+                        st.session_state.competitor_data = ounass_extractor.get_processed_ounass_data(html_b)
+                        df_b = pd.DataFrame(st.session_state.competitor_data)
+                        st.session_state.df_competitor = df_b
+                        st.session_state.df_competitor_processed = True
+                        competitor_processed_ok = True
+
+        
         elif competitor_name_live == "Sephora":
              sephora_html_to_process = st.session_state.get('uploaded_sephora_html')
              if sephora_html_to_process:
