@@ -131,6 +131,9 @@ if not viewing_saved_id_check and st.session_state.get('df_time_comparison', pd.
             )
             st.session_state.uploaded_sephora_html = None   # housekeeping
             st.session_state.levelshoes_url_input = ""       # housekeeping
+            st.session_state.custom_left_title   = ctry_a
+            st.session_state.custom_right_title  = ctry_b
+            st.session_state.custom_comp_heading = f"{ctry_a} vs {ctry_b} Brand Comparison"
         elif competitor_name == "Sephora":
             uploaded_file = st.file_uploader(
                 "Upload Sephora HTML File",
