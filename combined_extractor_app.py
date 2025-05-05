@@ -1477,7 +1477,9 @@ else:
                     df_a  = _prepare_ounass_df(pd.DataFrame(raw_a))
                     st.session_state.df_ounass           = df_a
                     st.session_state.df_ounass_processed = not df_a.empty
-        
+                    
+            time.sleep(1.5) 
+            
             # 4) COUNTRY B tarafı
             with st.spinner(f"Processing Ounass {ctry_b} …"):
                 html_b = fetch_html_content(url_b)
