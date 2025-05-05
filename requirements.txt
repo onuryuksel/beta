@@ -1,0 +1,10 @@
+python-Levenshtein
+streamlit
+pandas
+requests
+beautifulsoup4
+thefuzz
+plotly
+numpy
+psycopg2-binary
+pytz
