@@ -985,23 +985,23 @@ def display_all_results(
     st.write("")
     st.markdown("---")
 
-    # -------------------------------------------------------
+    # -----------------------------------------------------------------
     # 4.  Single‑site result tables (left / right)
-    # -------------------------------------------------------
+    # -----------------------------------------------------------------
     if not is_saved_view:
         col1, col2 = st.columns(2)
-
-        # Left side – Ounass (or country‑specific heading)
+    
+        # Left: Ounass (veya country‑A etiketi)
         with col1:
             display_single_site_results(
                 st.session_state.get("df_ounass"),
-                title_left,  # <-- dynamic heading
+                title_left,                              # ⬅︎ dinamik
                 st.session_state.get("df_ounass_processed", False),
                 bool(st.session_state.get("ounass_url_input")),
                 process_button,
             )
-
-        # Right side – competitor (or second country)
+    
+        # Right: competitor (veya country‑B)
         with col2:
             competitor_input_provided = bool(
                 st.session_state.get("levelshoes_url_input")
@@ -1010,7 +1010,7 @@ def display_all_results(
             )
             display_single_site_results(
                 st.session_state.get("df_competitor"),
-                title_right,  # <-- dynamic heading
+                title_right,                             # ⬅︎ dinamik
                 st.session_state.get("df_competitor_processed", False),
                 competitor_input_provided,
                 process_button,
