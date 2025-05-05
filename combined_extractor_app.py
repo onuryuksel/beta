@@ -482,19 +482,47 @@ def handle_checkbox_change(group_key, comp_id):
         else: selections.add(comp_id)
     else: selections.discard(comp_id)
 
+import time
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
 # Fetch HTML function remains the same
 @st.cache_data(ttl=600)
-def fetch_html_content(url):
-    if not url: print("Fetch error: URL cannot be empty."); return None
+def fetch_html_content(url: str, max_retries: int = 5) -> str | None:
+    """
+    Fetches HTML with retry + exponential back‑off.
+    Returns HTML string or None if it finally fails / is rate‑limited.
+    """
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/122.0 Safari/537.36"
+        )
+    }
+
+    retry_strategy = Retry(
+        total=max_retries,
+        status_forcelist=[429, 500, 502, 503, 504],
+        allowed_methods=["GET", "HEAD"],
+        backoff_factor=1,        # 1 s → 2 s → 4 s …
+        raise_on_status=False,
+    )
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    session = requests.Session()
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
+
     try:
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36', 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9', 'Accept-Language': 'en-US,en;q=0.9', 'Connection': 'keep-alive', 'DNT': '1', 'Upgrade-Insecure-Requests': '1'}
-        response = requests.get(url, headers=headers, timeout=30)
-        response.raise_for_status()
-        return response.text
-    except requests.exceptions.Timeout: st.error(f"Error: Timeout fetching {url}"); return None
-    except requests.exceptions.HTTPError as http_err: st.error(f"HTTP error occurred fetching {url}: {http_err} (Status code: {http_err.response.status_code})"); return None
-    except requests.exceptions.RequestException as e: st.error(f"Error fetching {url}: {e}"); return None
-    except Exception as e: st.error(f"Unexpected error during fetch for {url}: {e}"); return None
+        resp = session.get(url, headers=headers, timeout=30)
+        if resp.status_code == 429:
+            st.warning("Rate‑limit hit (HTTP 429). Try again in a minute.")
+            return None
+        resp.raise_for_status()
+        return resp.text
+    except requests.RequestException as e:
+        st.error(f"HTTP error occurred fetching {url}: {e}")
+        return None
 
 # Ounass URL parameter function remains the same
 def ensure_ounass_full_list_parameter(url):
