@@ -1016,8 +1016,7 @@ else:
                 st.session_state.competitor_selection = f"Ounass ({ctry_b})"
                 
         elif competitor_name_live == "Sephora":
-             sephora_html_to_process = st.session_state.get('up
-             loaded_sephora_html')
+             sephora_html_to_process = st.session_state.get('uploaded_sephora_html')
              if sephora_html_to_process:
                   with st.spinner("Processing Sephora HTML File..."): st.session_state.competitor_data = sephora_extractor.get_processed_sephora_data(sephora_html_to_process)
                   if st.session_state.competitor_data:
