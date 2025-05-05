@@ -672,6 +672,10 @@ def display_all_results(df_ounass, df_competitor, competitor_name_arg, df_compar
     global process_button
     stats_title = stats_title_prefix; detected_gender, detected_category = None, None
     ounass_url_for_meta = ''; competitor_input_for_meta = ''; comp_name_for_meta = competitor_name_arg
+    live_competitor_name = st.session_state.get(
+    'competitor_display_name',   # varsa bunu kullan
+    st.session_state.competitor_selection  # yoksa eski değeri
+    )
     if is_saved_view and saved_meta:
         comp_name_for_meta = saved_meta.get('competitor_name', 'Unknown Competitor'); ounass_url_for_meta = saved_meta.get('ounass_url', ''); competitor_input_for_meta = saved_meta.get('competitor_input', 'N/A')
         oun_g, oun_c = extract_info_from_url(ounass_url_for_meta); ls_g, ls_c = None, None
