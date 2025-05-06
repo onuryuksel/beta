@@ -735,6 +735,10 @@ def display_all_results(
         title_left: str = "Ounass Results",
         title_right: str | None = None,
         comparison_heading: str | None = None,
+        display_name = st.session_state.get(
+            "competitor_display_name",
+            comp_name_for_meta            # fallback
+        )
 ):
     """
     Renders the complete results section.
@@ -759,10 +763,10 @@ def display_all_results(
 
     # Fallbacks for the new headings
     if title_right is None:
-        title_right = f"{comp_name_for_meta} Results"
+        title_right = f"{display_name} Results"
 
     if comparison_heading is None:
-        comparison_heading = f"Ounass vs {comp_name_for_meta} Brand Comparison"
+        comparison_heading = f"Ounass vs {display_name} Brand Comparison"
 
     # -------------------------------------------------------
     # 1.  Figure out dynamic “stats_title” & meta info block
@@ -960,17 +964,17 @@ def display_all_results(
         st.metric("Ounass Brands", f"{total_ounass_brands:,}")
         st.metric("Ounass Products", f"{total_ounass_products:,}")
     with stat_col2:
-        st.metric(f"{comp_name_for_meta} Brands", f"{total_competitor_brands:,}")
-        st.metric(f"{comp_name_for_meta} Products", f"{total_competitor_products:,}")
+        st.metric(f"{display_name} Brands", f"{total_competitor_brands:,}")
+        st.metric(f"{display_name} Products", f"{total_competitor_products:,}")
     with stat_col3:
         if not df_comp_safe.empty and "Ounass_Count" in df_comp_safe.columns and competitor_count_col_name in df_comp_safe.columns:
             st.metric("Common Brands", f"{common_brands_count:,}")
             st.metric("Ounass Only", f"{ounass_only_count:,}")
-            st.metric(f"{comp_name_for_meta} Only", f"{competitor_only_count:,}")
+            st.metric(f"{display_name} Only", f"{competitor_only_count:,}")
         else:
             st.metric("Common Brands", "N/A")
             st.metric("Ounass Only", "N/A")
-            st.metric(f"{comp_name_for_meta} Only", "N/A")
+            st.metric(f"{display_name} Only", "N/A")
 
         ounass_input_exists = bool(st.session_state.get("ounass_url_input"))
         competitor_input_exists = bool(
@@ -1075,7 +1079,7 @@ def display_all_results(
 
         # Bar chart: largest differences
         with viz_col2:
-            st.write(f"**Top 10 Largest Differences (Ounass - {comp_name_for_meta})**")
+            st.write(f"**Top 10 Largest Differences (Ounass - {display_name})**")
             if "Difference" in df_comp_safe.columns and "Display_Brand" in df_comp_safe.columns:
                 df_comp_safe["Difference"] = pd.to_numeric(df_comp_safe["Difference"], errors="coerce")
                 df_diff_valid = df_comp_safe.dropna(subset=["Difference"])
@@ -1184,7 +1188,7 @@ def display_all_results(
                 st.info("Required data unavailable.")
 
         with col_comp2:
-            st.subheader(f"Brands in {comp_name_for_meta} Only")
+            st.subheader(f"Brands in {display_name} Only")
             if req_cols_exist:
                 df_comp_safe["Ounass_Count"] = pd.to_numeric(df_comp_safe["Ounass_Count"], errors="coerce").fillna(0)
                 df_comp_safe[competitor_count_col_name] = pd.to_numeric(
@@ -1215,7 +1219,7 @@ def display_all_results(
         col_comp3, col_comp4 = st.columns(2)
 
         with col_comp3:
-            st.subheader(f"Common Brands: Ounass > {comp_name_for_meta}")
+            st.subheader(f"Common Brands: Ounass > {display_name}")
             if req_cols_exist:
                 df_comp_safe["Ounass_Count"] = pd.to_numeric(df_comp_safe["Ounass_Count"], errors="coerce").fillna(0)
                 df_comp_safe[competitor_count_col_name] = pd.to_numeric(
@@ -1243,7 +1247,7 @@ def display_all_results(
                 st.info("Required data unavailable.")
 
         with col_comp4:
-            st.subheader(f"Common Brands: {comp_name_for_meta} > Ounass")
+            st.subheader(f"Common Brands: {display_name} > Ounass")
             if req_cols_exist:
                 df_comp_safe["Ounass_Count"] = pd.to_numeric(df_comp_safe["Ounass_Count"], errors="coerce").fillna(0)
                 df_comp_safe[competitor_count_col_name] = pd.to_numeric(
