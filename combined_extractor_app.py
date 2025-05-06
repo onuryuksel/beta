@@ -1445,6 +1445,13 @@ else:
                     except Exception as e: st.error(f"Error creating Ounass DF: {e}")
         else: st.warning("Ounass URL is required.")
         competitor_processed_ok = False; competitor_name_live = st.session_state.competitor_selection
+        # -----------------------------------------------------------
+        # Başlangıçta COMPETITOR adlarını temizle
+        if st.session_state.competitor_selection != "Ounass vs Ounass":
+        # Level Shoes veya Sephora akışı
+        st.session_state.competitor_display_name = st.session_state.competitor_selection
+        st.session_state.internal_comp_key       = st.session_state.competitor_selection
+        # -----------------------------------------------------------
         if competitor_name_live == "Level Shoes":
             if st.session_state.levelshoes_url_input:
                  with st.spinner("Processing Level Shoes URL..."):
