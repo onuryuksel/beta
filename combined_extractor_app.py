@@ -236,7 +236,7 @@ def save_comparison(ounass_url, competitor_name_arg, competitor_input_arg, df_co
     conn = get_db_connection()
     if conn is None: return False
     try:
-      # ------------------------------------------------------------------
+# ------------------------------------------------------------------
 # Choose a clock that always ticks in Dubai 🇦🇪  (UTC+4, no DST)
 # ------------------------------------------------------------------
         if pytz is not None:                             # <- 4 spaces
@@ -383,7 +383,6 @@ def delete_comparison(comp_id):
 
 # --- Helper Functions ---
 
-# ----- Replace this function in combined_extractor_app.py -----
 def clean_brand_name(brand_name):
     """Cleans brand names for better matching across sources."""
     if not isinstance(brand_name, str) or not brand_name:
@@ -1419,7 +1418,7 @@ elif viewing_saved_id:
         if st.button("Clear Invalid Saved View URL & Go Back"): st.query_params.clear(); st.rerun()
 else:
     if process_button:
-        st.session_state.df_ounass = pd.DataFrame(columns=['Brand', 'Count', 'Brand_Cleaned']); st.session_state.df_competitor = pd.DataFrame(columns=['Brand', 'Count', 'Brand_Cleaned'])
+        st.session_state.df_ounass = pd.DataFrame(columns=['Brand', 'Count']); st.session_state.df_competitor = pd.DataFrame(columns=['Brand', 'Count'])
         st.session_state.ounass_data = []; st.session_state.competitor_data = []; st.session_state.df_comparison_sorted = pd.DataFrame()
         st.session_state.processed_ounass_url = ''; st.session_state.df_ounass_processed = False; st.session_state.df_competitor_processed = False
         ounass_processed_ok = False
