@@ -762,7 +762,7 @@ def display_all_results(
             "competitor_display_name",
             comp_name_for_meta            # fallback
         )
-     display_name = st.session_state.get("competitor_display_name", comp_name_for_meta)
+    display_name = st.session_state.get("competitor_display_name", comp_name_for_meta)
     internal_key = st.session_state.get("internal_comp_key", comp_name_for_meta)
     competitor_count_col_name = f"{internal_key.replace(' ', '')}_Count"
     # Fallbacks for the new headings
