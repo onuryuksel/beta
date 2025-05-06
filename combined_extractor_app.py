@@ -737,9 +737,7 @@ def display_all_results(
         comparison_heading: str | None = None,
         
 ):
-    display_name = st.session_state.get("competitor_display_name", comp_name_for_meta)
-    internal_key = st.session_state.get("internal_comp_key", comp_name_for_meta)
-    competitor_count_col_name = f"{internal_key.replace(' ', '')}_Count"
+
     """
     Renders the complete results section.
 
@@ -764,6 +762,9 @@ def display_all_results(
             "competitor_display_name",
             comp_name_for_meta            # fallback
         )
+     display_name = st.session_state.get("competitor_display_name", comp_name_for_meta)
+    internal_key = st.session_state.get("internal_comp_key", comp_name_for_meta)
+    competitor_count_col_name = f"{internal_key.replace(' ', '')}_Count"
     # Fallbacks for the new headings
     if title_right is None:
         title_right = f"{display_name} Results"
