@@ -737,6 +737,9 @@ def display_all_results(
         comparison_heading: str | None = None,
         
 ):
+    display_name = st.session_state.get("competitor_display_name", comp_name_for_meta)
+    internal_key = st.session_state.get("internal_comp_key", comp_name_for_meta)
+    competitor_count_col_name = f"{internal_key.replace(' ', '')}_Count"
     """
     Renders the complete results section.
 
@@ -920,7 +923,7 @@ def display_all_results(
     common_brands_count = 0
     ounass_only_count = 0
     competitor_only_count = 0
-    competitor_count_col_name = f"{comp_name_for_meta.replace(' ', '')}_Count"
+   
 
     if not df_comp_safe.empty and "Ounass_Count" in df_comp_safe.columns and competitor_count_col_name in df_comp_safe.columns:
         df_comp_safe["Ounass_Count"] = pd.to_numeric(df_comp_safe["Ounass_Count"], errors="coerce").fillna(0)
@@ -1561,6 +1564,7 @@ else:
                     st.session_state.df_comparison_sorted = df_comp.sort_values(by=['Total_Count', 'Ounass_Count', 'Display_Brand'], ascending=[False, False, True]).reset_index(drop=True)[final_cols_ordered + ['Total_Count']]
                 except Exception as merge_e: st.error(f"Error during comparison merge: {merge_e}"); st.session_state.df_comparison_sorted = pd.DataFrame()
         else: st.session_state.df_comparison_sorted = pd.DataFrame(); print("Comparison skipped.")
+        st.session_state.internal_comp_key = competitor_name_live
         df_ounass_live = st.session_state.get('df_ounass'); df_competitor_live = st.session_state.get('df_competitor'); df_comparison_sorted_live = st.session_state.get('df_comparison_sorted'); live_competitor_name = st.session_state.competitor_selection
         df_ounass_live            = st.session_state.get("df_ounass")
         df_competitor_live        = st.session_state.get("df_competitor")
