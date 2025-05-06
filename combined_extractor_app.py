@@ -1561,7 +1561,10 @@ else:
         df_ounass_live            = st.session_state.get("df_ounass")
         df_competitor_live        = st.session_state.get("df_competitor")
         df_comparison_sorted_live = st.session_state.get("df_comparison_sorted")
-        live_competitor_name      = st.session_state.competitor_selection
+        live_competitor_name = st.session_state.get(
+            "competitor_display_name",
+            st.session_state.competitor_selection
+        )
         display_all_results(
             df_ounass_live,
             df_competitor_live,
