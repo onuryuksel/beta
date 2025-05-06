@@ -735,10 +735,7 @@ def display_all_results(
         title_left: str = "Ounass Results",
         title_right: str | None = None,
         comparison_heading: str | None = None,
-        display_name = st.session_state.get(
-            "competitor_display_name",
-            comp_name_for_meta            # fallback
-        )
+        
 ):
     """
     Renders the complete results section.
@@ -760,7 +757,10 @@ def display_all_results(
     )
 
     comp_name_for_meta = competitor_name_arg  # we re‑use this a lot later
-
+    display_name = st.session_state.get(
+            "competitor_display_name",
+            comp_name_for_meta            # fallback
+        )
     # Fallbacks for the new headings
     if title_right is None:
         title_right = f"{display_name} Results"
